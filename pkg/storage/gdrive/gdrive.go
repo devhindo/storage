@@ -1,47 +1,39 @@
-package drive
+package gdrive
 
 import (
 	"context"
 	"fmt"
 	"net/http"
 
+	"github.com/devhindo/storage/pkg/core"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 )
 
-// Service wraps the Google Drive API service.
-type Service struct {
+// Backend implements core.Backend using Google Drive.
+type Backend struct {
 	srv *drive.Service
 }
 
-// FileEntry represents a file or folder in Google Drive.
-type FileEntry struct {
-	ID       string
-	Name     string
-	MimeType string
-	Size     int64
-	IsFolder bool
-}
-
-// NewService creates a new Drive service from an authenticated HTTP client.
-func NewService(client *http.Client) (*Service, error) {
+// New creates a new Google Drive backend from an authenticated HTTP client.
+func New(client *http.Client) (*Backend, error) {
 	srv, err := drive.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
 		return nil, fmt.Errorf("unable to create drive service: %w", err)
 	}
-	return &Service{srv: srv}, nil
+	return &Backend{srv: srv}, nil
 }
 
 // ListFolder lists files and folders within the given folder ID.
-// Use "root" for the top-level Drive folder.
-func (s *Service) ListFolder(folderID string) ([]FileEntry, error) {
+func (b *Backend) ListFolder(ctx context.Context, folderID string) ([]core.FileEntry, error) {
 	query := fmt.Sprintf("'%s' in parents and trashed = false", folderID)
 
-	var entries []FileEntry
+	var entries []core.FileEntry
 	pageToken := ""
 
 	for {
-		call := s.srv.Files.List().
+		call := b.srv.Files.List().
+			Context(ctx).
 			Q(query).
 			Fields("nextPageToken, files(id, name, mimeType, size)").
 			OrderBy("folder, name").
@@ -57,7 +49,7 @@ func (s *Service) ListFolder(folderID string) ([]FileEntry, error) {
 		}
 
 		for _, f := range result.Files {
-			entries = append(entries, FileEntry{
+			entries = append(entries, core.FileEntry{
 				ID:       f.Id,
 				Name:     f.Name,
 				MimeType: f.MimeType,

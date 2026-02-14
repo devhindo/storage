@@ -108,13 +108,12 @@ func saveToken(tok *oauth2.Token) error {
 	return json.NewEncoder(f).Encode(tok)
 }
 
-// getTokenFromWeb starts a local HTTP server on a random port to receive
+// getTokenFromWeb starts a local HTTP server to receive
 // the OAuth2 callback, opens the browser for consent, and returns the token.
 func getTokenFromWeb(config *oauth2.Config) (*oauth2.Token, error) {
 	codeCh := make(chan string, 1)
 	errCh := make(chan error, 1)
 
-	// Start local server to capture the redirect
 	mux := http.NewServeMux()
 	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")

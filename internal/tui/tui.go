@@ -1,12 +1,13 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/devhindo/storage/internal/drive"
+	"github.com/devhindo/storage/pkg/core"
 )
 
 var (
@@ -20,8 +21,8 @@ var (
 
 // Model is the Bubble Tea model for the file browser.
 type Model struct {
-	srv     *drive.Service
-	entries []drive.FileEntry
+	svc     *core.FileService
+	entries []core.FileEntry
 	cursor  int
 	path    []breadcrumb // navigation stack
 	loading bool
@@ -37,7 +38,7 @@ type breadcrumb struct {
 
 // Messages
 type fetchedMsg struct {
-	entries []drive.FileEntry
+	entries []core.FileEntry
 }
 
 type errMsg struct {
@@ -47,9 +48,9 @@ type errMsg struct {
 func (e errMsg) Error() string { return e.err.Error() }
 
 // Run starts the TUI application.
-func Run(srv *drive.Service) error {
+func Run(svc *core.FileService) error {
 	m := Model{
-		srv:     srv,
+		svc:     svc,
 		loading: true,
 		path:    []breadcrumb{{id: "root", name: "My Drive"}},
 	}
@@ -184,7 +185,7 @@ func (m Model) View() string {
 	return b.String()
 }
 
-func formatEntry(e drive.FileEntry) string {
+func formatEntry(e core.FileEntry) string {
 	if e.IsFolder {
 		return folderStyle.Render("📁 " + e.Name)
 	}
@@ -210,7 +211,7 @@ func formatSize(bytes int64) string {
 
 func (m Model) fetchFolder(folderID string) tea.Cmd {
 	return func() tea.Msg {
-		entries, err := m.srv.ListFolder(folderID)
+		entries, err := m.svc.ListFolder(context.Background(), folderID)
 		if err != nil {
 			return errMsg{err: err}
 		}
