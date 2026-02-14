@@ -1,6 +1,7 @@
 package drive
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -24,7 +25,7 @@ type FileEntry struct {
 
 // NewService creates a new Drive service from an authenticated HTTP client.
 func NewService(client *http.Client) (*Service, error) {
-	srv, err := drive.NewService(nil, option.WithHTTPClient(client))
+	srv, err := drive.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
 		return nil, fmt.Errorf("unable to create drive service: %w", err)
 	}
